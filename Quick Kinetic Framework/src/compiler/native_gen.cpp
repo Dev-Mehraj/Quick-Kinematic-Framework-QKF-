@@ -16,7 +16,9 @@ std::string NativeAppGenerator::generate_cpp(ProgramNode& program) {
     out_.clear();
     indent_level_ = 0;
     menu_id_counter_ = 1000;
+    ctrl_id_counter_ = 2000;
     registered_menu_actions_.clear();
+    registered_control_actions_.clear();
 
     out_ << "// =====================================================================\n";
     out_ << "// Quick Kinetic Framework (QKF) - Generated Native Windows C++ App\n";
@@ -24,9 +26,11 @@ std::string NativeAppGenerator::generate_cpp(ProgramNode& program) {
     out_ << "#define WIN32_LEAN_AND_MEAN\n";
     out_ << "#include <windows.h>\n";
     out_ << "#include <windowsx.h>\n";
+    out_ << "#include <commctrl.h>\n";
     out_ << "#include <iostream>\n";
     out_ << "#include <string>\n";
     out_ << "#include <vector>\n";
+    out_ << "#include <unordered_map>\n";
     out_ << "#include <functional>\n";
     out_ << "#include <memory>\n";
     out_ << "#include <sstream>\n\n";
@@ -370,6 +374,50 @@ void NativeAppGenerator::visit(StateDecl& node) {
     out_ << ";\n";
 }
 
+static std::string get_prop_str(const UIElementNode& elem, const std::string& key, const std::string& def = "") {
+    for (const auto& p : elem.properties) {
+        if (p->name == key && p->value) {
+            auto lit = dynamic_cast<LiteralExpr*>(p->value.get());
+            if (lit) return lit->token.text;
+        }
+    }
+    return def;
+}
+
+static int get_prop_int(const UIElementNode& elem, const std::string& key, int def = 0) {
+    for (const auto& p : elem.properties) {
+        if (p->name == key && p->value) {
+            auto lit = dynamic_cast<LiteralExpr*>(p->value.get());
+            if (lit) {
+                try { return std::stoi(lit->token.text); } catch (...) {}
+            }
+        }
+    }
+    return def;
+}
+
+static bool get_prop_bool(const UIElementNode& elem, const std::string& key, bool def = false) {
+    for (const auto& p : elem.properties) {
+        if (p->name == key && p->value) {
+            auto lit = dynamic_cast<LiteralExpr*>(p->value.get());
+            if (lit) {
+                if (lit->token.text == "true") return true;
+                if (lit->token.text == "false") return false;
+            }
+        }
+    }
+    return def;
+}
+
+static PropertyNode* get_prop_block(const UIElementNode& elem, const std::string& key) {
+    for (const auto& p : elem.properties) {
+        if (p->name == key && p->block_value) {
+            return p.get();
+        }
+    }
+    return nullptr;
+}
+
 static void collect_menu_items(const UIElementNode& elem, int& counter, 
                                std::vector<std::string>& menu_stmts,
                                std::string parent_hmenu,
@@ -388,18 +436,195 @@ static void collect_menu_items(const UIElementNode& elem, int& counter,
         }
 
         if (child->children.empty()) {
-            // Leaf menu item with action!
             int id = ++counter;
             menu_stmts.push_back("AppendMenuA(" + parent_hmenu + ", MF_STRING, " + std::to_string(id) + ", \"" + label + "\");");
             actions.push_back({id, label, onclick});
         } else {
-            // Submenu
             std::string sub_name = "hSubMenu_" + std::to_string(++counter);
             menu_stmts.push_back("HMENU " + sub_name + " = CreatePopupMenu();");
             collect_menu_items(*child, counter, menu_stmts, sub_name, actions);
             menu_stmts.push_back("AppendMenuA(" + parent_hmenu + ", MF_POPUP, (UINT_PTR)" + sub_name + ", \"" + label + "\");");
         }
     }
+}
+
+static void emit_native_layout(
+    const UIElementNode& elem,
+    int cur_x,
+    int cur_y,
+    int avail_w,
+    int& out_w,
+    int& out_h,
+    int& ctrl_counter,
+    std::vector<std::string>& stmts,
+    std::vector<NativeAppGenerator::ControlAction>& actions
+) {
+    std::string tag = elem.component_name;
+    std::string elem_id = get_prop_str(elem, "id");
+    std::string elem_name = get_prop_str(elem, "name");
+
+    // Skip non-layout elements
+    if (tag == "TitleBar" || tag == "WindowControls" || tag == "Toolbar" || tag == "toolbar") {
+        out_w = 0;
+        out_h = 0;
+        return;
+    }
+
+    if (tag == "Column" || tag == "column" || tag == "VStack") {
+        int padding = get_prop_int(elem, "padding", 16);
+        int spacing = get_prop_int(elem, "spacing", 12);
+        int cx = cur_x + padding;
+        int cy = cur_y + padding;
+        int child_avail_w = (avail_w > 2 * padding) ? (avail_w - 2 * padding) : avail_w;
+        int max_child_w = 0;
+
+        for (const auto& child : elem.children) {
+            int cw = 0, ch = 0;
+            emit_native_layout(*child, cx, cy, child_avail_w, cw, ch, ctrl_counter, stmts, actions);
+            if (ch > 0) {
+                cy += ch + spacing;
+                if (cw > max_child_w) max_child_w = cw;
+            }
+        }
+        out_w = max_child_w + 2 * padding;
+        out_h = (cy > cur_y + padding) ? (cy - cur_y - spacing + padding) : (2 * padding);
+        return;
+    }
+
+    if (tag == "Row" || tag == "row" || tag == "HStack") {
+        int padding = get_prop_int(elem, "padding", 0);
+        int spacing = get_prop_int(elem, "spacing", 10);
+        int cx = cur_x + padding;
+        int cy = cur_y + padding;
+        int max_child_h = 0;
+
+        for (const auto& child : elem.children) {
+            int cw = 0, ch = 0;
+            emit_native_layout(*child, cx, cy, avail_w, cw, ch, ctrl_counter, stmts, actions);
+            if (cw > 0) {
+                cx += cw + spacing;
+                if (ch > max_child_h) max_child_h = ch;
+            }
+        }
+        out_w = (cx > cur_x + padding) ? (cx - cur_x - spacing + padding) : (2 * padding);
+        out_h = max_child_h + 2 * padding;
+        return;
+    }
+
+    if (tag == "Container" || tag == "container" || tag == "Panel") {
+        int padding = get_prop_int(elem, "padding", 12);
+        int spacing = get_prop_int(elem, "spacing", 10);
+        int cx = cur_x + padding;
+        int cy = cur_y + padding;
+        int child_avail_w = (avail_w > 2 * padding) ? (avail_w - 2 * padding) : avail_w;
+        int max_child_w = 0;
+
+        for (const auto& child : elem.children) {
+            int cw = 0, ch = 0;
+            emit_native_layout(*child, cx, cy, child_avail_w, cw, ch, ctrl_counter, stmts, actions);
+            if (ch > 0) {
+                cy += ch + spacing;
+                if (cw > max_child_w) max_child_w = cw;
+            }
+        }
+        out_w = max_child_w + 2 * padding;
+        out_h = (cy > cur_y + padding) ? (cy - cur_y - spacing + padding) : (2 * padding);
+        return;
+    }
+
+    if (tag == "Button" || tag == "button") {
+        std::string label = get_prop_str(elem, "label", get_prop_str(elem, "text", "Button"));
+        int w = get_prop_int(elem, "width", 130);
+        int h = get_prop_int(elem, "height", 32);
+        PropertyNode* onClick = get_prop_block(elem, "onClick");
+        if (!onClick) onClick = get_prop_block(elem, "onclick");
+
+        int id = ++ctrl_counter;
+        std::string var = "hCtrl_" + std::to_string(id);
+        stmts.push_back("HWND " + var + " = CreateWindowExA(0, \"BUTTON\", \"" + label + "\", WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON, " + std::to_string(cur_x) + ", " + std::to_string(cur_y) + ", " + std::to_string(w) + ", " + std::to_string(h) + ", hwnd, (HMENU)(UINT_PTR)" + std::to_string(id) + ", hInst, NULL);");
+        stmts.push_back("if (" + var + ") SendMessageA(" + var + ", WM_SETFONT, (WPARAM)hFont, TRUE);");
+        stmts.push_back("register_control(\"" + elem_id + "\", \"" + elem_name + "\", " + var + ");");
+
+        actions.push_back({id, "Button", elem_id, elem_name, label, onClick, nullptr});
+        out_w = w;
+        out_h = h;
+        return;
+    }
+
+    if (tag == "Input" || tag == "input" || tag == "TextField") {
+        std::string text = get_prop_str(elem, "text", get_prop_str(elem, "value", ""));
+        std::string placeholder = get_prop_str(elem, "placeholder", "");
+        int w = get_prop_int(elem, "width", 240);
+        int h = get_prop_int(elem, "height", 28);
+        PropertyNode* onChange = get_prop_block(elem, "onChange");
+        if (!onChange) onChange = get_prop_block(elem, "onchange");
+
+        int id = ++ctrl_counter;
+        std::string var = "hCtrl_" + std::to_string(id);
+        stmts.push_back("HWND " + var + " = CreateWindowExA(WS_EX_CLIENTEDGE, \"EDIT\", \"" + text + "\", WS_CHILD | WS_VISIBLE | WS_TABSTOP | ES_AUTOHSCROLL, " + std::to_string(cur_x) + ", " + std::to_string(cur_y) + ", " + std::to_string(w) + ", " + std::to_string(h) + ", hwnd, (HMENU)(UINT_PTR)" + std::to_string(id) + ", hInst, NULL);");
+        stmts.push_back("if (" + var + ") SendMessageA(" + var + ", WM_SETFONT, (WPARAM)hFont, TRUE);");
+        if (!placeholder.empty()) {
+            stmts.push_back("if (" + var + ") SendMessageW(" + var + ", EM_SETCUEBANNER, TRUE, (LPARAM)L\"" + placeholder + "\");");
+        }
+        stmts.push_back("register_control(\"" + elem_id + "\", \"" + elem_name + "\", " + var + ");");
+
+        actions.push_back({id, "Input", elem_id, elem_name, text, nullptr, onChange});
+        out_w = w;
+        out_h = h;
+        return;
+    }
+
+    if (tag == "Text" || tag == "text" || tag == "Label" || tag == "label") {
+        std::string text = get_prop_str(elem, "text", get_prop_str(elem, "title", get_prop_str(elem, "content", "Label")));
+        int w = get_prop_int(elem, "width", avail_w > 0 ? avail_w : 320);
+        int h = get_prop_int(elem, "height", 24);
+
+        int id = ++ctrl_counter;
+        std::string var = "hCtrl_" + std::to_string(id);
+        stmts.push_back("HWND " + var + " = CreateWindowExA(0, \"STATIC\", \"" + text + "\", WS_CHILD | WS_VISIBLE | SS_LEFT, " + std::to_string(cur_x) + ", " + std::to_string(cur_y) + ", " + std::to_string(w) + ", " + std::to_string(h) + ", hwnd, (HMENU)(UINT_PTR)" + std::to_string(id) + ", hInst, NULL);");
+        stmts.push_back("if (" + var + ") SendMessageA(" + var + ", WM_SETFONT, (WPARAM)hFont, TRUE);");
+        stmts.push_back("register_control(\"" + elem_id + "\", \"" + elem_name + "\", " + var + ");");
+
+        actions.push_back({id, "Text", elem_id, elem_name, text, nullptr, nullptr});
+        out_w = w;
+        out_h = h;
+        return;
+    }
+
+    if (tag == "Checkbox" || tag == "checkbox" || tag == "Toggle") {
+        std::string label = get_prop_str(elem, "label", get_prop_str(elem, "text", "Checkbox"));
+        bool is_checked = get_prop_bool(elem, "checked", false);
+        int w = get_prop_int(elem, "width", 220);
+        int h = get_prop_int(elem, "height", 24);
+        PropertyNode* onClick = get_prop_block(elem, "onClick");
+        if (!onClick) onClick = get_prop_block(elem, "onclick");
+
+        int id = ++ctrl_counter;
+        std::string var = "hCtrl_" + std::to_string(id);
+        stmts.push_back("HWND " + var + " = CreateWindowExA(0, \"BUTTON\", \"" + label + "\", WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_AUTOCHECKBOX, " + std::to_string(cur_x) + ", " + std::to_string(cur_y) + ", " + std::to_string(w) + ", " + std::to_string(h) + ", hwnd, (HMENU)(UINT_PTR)" + std::to_string(id) + ", hInst, NULL);");
+        stmts.push_back("if (" + var + ") SendMessageA(" + var + ", WM_SETFONT, (WPARAM)hFont, TRUE);");
+        if (is_checked) {
+            stmts.push_back("if (" + var + ") SendMessageA(" + var + ", BM_SETCHECK, BST_CHECKED, 0);");
+        }
+        stmts.push_back("register_control(\"" + elem_id + "\", \"" + elem_name + "\", " + var + ");");
+
+        actions.push_back({id, "Checkbox", elem_id, elem_name, label, onClick, nullptr});
+        out_w = w;
+        out_h = h;
+        return;
+    }
+
+    out_w = 0;
+    out_h = 0;
+}
+
+std::string NativeAppGenerator::emit_block_stmts(BlockStmt& block, int indent_lvl) {
+    NativeAppGenerator sub;
+    sub.indent_level_ = indent_lvl;
+    for (const auto& s : block.statements) {
+        if (s) s->accept(sub);
+    }
+    return sub.out_.str();
 }
 
 void NativeAppGenerator::visit(WindowDecl& node) {
@@ -463,22 +688,99 @@ void NativeAppGenerator::visit(WindowDecl& node) {
         }
     }
 
+    // Layout calculation for Column, Row, Container, Button, Input, Text, Checkbox
+    std::vector<std::string> layout_build_stmts;
+    int start_x = 0;
+    int start_y = (controls_style == "macos") ? 36 : 0;
+    int avail_w = win_width;
+
+    for (const auto& elem : node.root_elements) {
+        std::string tag = elem->component_name;
+        if (tag == "Toolbar" || tag == "toolbar" || tag == "TitleBar" || tag == "titlebar" || tag == "WindowControls") {
+            continue;
+        }
+        int cw = 0, ch = 0;
+        emit_native_layout(*elem, start_x, start_y, avail_w, cw, ch, ctrl_id_counter_, layout_build_stmts, registered_control_actions_);
+        if (ch > 0) {
+            start_y += ch + 12;
+        }
+    }
+
     out_ << "// Native Win32 Window Class for: " << node.name << "\n";
     out_ << "class Window_" << node.name << " {\n";
     out_ << "public:\n";
     out_ << "    HWND hwnd = NULL;\n";
+    out_ << "    inline static Window_" << node.name << "* s_instance = nullptr;\n";
     out_ << "    std::string title = \"" << win_title << "\";\n";
     out_ << "    int width = " << win_width << ";\n";
     out_ << "    int height = " << win_height << ";\n";
-    out_ << "    std::string controls_style = \"" << controls_style << "\";\n\n";
+    out_ << "    std::string controls_style = \"" << controls_style << "\";\n";
+    out_ << "    HFONT hFont = NULL;\n";
+    out_ << "    std::unordered_map<std::string, HWND> controls_by_id;\n";
+    out_ << "    std::unordered_map<std::string, HWND> controls_by_name;\n\n";
 
     // User-declared custom methods
     for (const auto& d : node.declarations) {
         d->accept(*this);
     }
 
+    out_ << "    void register_control(const std::string& id, const std::string& name, HWND h) {\n";
+    out_ << "        if (!id.empty()) controls_by_id[id] = h;\n";
+    out_ << "        if (!name.empty()) controls_by_name[name] = h;\n";
+    out_ << "    }\n\n";
+
+    out_ << "    HWND getControl(const std::string& id_or_name) {\n";
+    out_ << "        auto it = controls_by_id.find(id_or_name);\n";
+    out_ << "        if (it != controls_by_id.end()) return it->second;\n";
+    out_ << "        auto it2 = controls_by_name.find(id_or_name);\n";
+    out_ << "        if (it2 != controls_by_name.end()) return it2->second;\n";
+    out_ << "        return NULL;\n";
+    out_ << "    }\n\n";
+
+    out_ << "    std::string getText(const std::string& id_or_name) {\n";
+    out_ << "        HWND h = getControl(id_or_name);\n";
+    out_ << "        if (!h) return \"\";\n";
+    out_ << "        int len = GetWindowTextLengthA(h);\n";
+    out_ << "        if (len <= 0) return \"\";\n";
+    out_ << "        std::vector<char> buf(len + 1, 0);\n";
+    out_ << "        GetWindowTextA(h, buf.data(), len + 1);\n";
+    out_ << "        return std::string(buf.data());\n";
+    out_ << "    }\n\n";
+
+    out_ << "    void setText(const std::string& id_or_name, const std::string& val) {\n";
+    out_ << "        HWND h = getControl(id_or_name);\n";
+    out_ << "        if (h) SetWindowTextA(h, val.c_str());\n";
+    out_ << "    }\n\n";
+
+    out_ << "    void clear(const std::string& id_or_name) {\n";
+    out_ << "        setText(id_or_name, \"\");\n";
+    out_ << "    }\n\n";
+
+    out_ << "    bool isChecked(const std::string& id_or_name) {\n";
+    out_ << "        HWND h = getControl(id_or_name);\n";
+    out_ << "        if (!h) return false;\n";
+    out_ << "        return SendMessageA(h, BM_GETCHECK, 0, 0) == BST_CHECKED;\n";
+    out_ << "    }\n\n";
+
+    out_ << "    void setChecked(const std::string& id_or_name, bool chk) {\n";
+    out_ << "        HWND h = getControl(id_or_name);\n";
+    out_ << "        if (h) SendMessageA(h, BM_SETCHECK, chk ? BST_CHECKED : BST_UNCHECKED, 0);\n";
+    out_ << "    }\n\n";
+
+    out_ << "    void enable(const std::string& id_or_name, bool en) {\n";
+    out_ << "        HWND h = getControl(id_or_name);\n";
+    out_ << "        if (h) EnableWindow(h, en ? TRUE : FALSE);\n";
+    out_ << "    }\n\n";
+
+    out_ << "    void show(const std::string& id_or_name, bool vis) {\n";
+    out_ << "        HWND h = getControl(id_or_name);\n";
+    out_ << "        if (h) ShowWindow(h, vis ? SW_SHOW : SW_HIDE);\n";
+    out_ << "    }\n\n";
+
     out_ << "    void create() {\n";
     out_ << "        HINSTANCE hInst = GetModuleHandle(NULL);\n";
+    out_ << "        INITCOMMONCONTROLSEX icex = { sizeof(INITCOMMONCONTROLSEX), ICC_STANDARD_CLASSES | ICC_WIN95_CLASSES };\n";
+    out_ << "        InitCommonControlsEx(&icex);\n\n";
     out_ << "        WNDCLASSEXA wc = { sizeof(WNDCLASSEXA) };\n";
     out_ << "        wc.lpfnWndProc = s_WndProc;\n";
     out_ << "        wc.hInstance = hInst;\n";
@@ -488,21 +790,30 @@ void NativeAppGenerator::visit(WindowDecl& node) {
     out_ << "        RegisterClassExA(&wc);\n\n";
 
     if (controls_style == "macos") {
-        out_ << "        // macOS-style borderless window with custom top-left traffic lights\n";
         out_ << "        DWORD style = WS_POPUP | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_VISIBLE;\n";
         out_ << "        hwnd = CreateWindowExA(WS_EX_APPWINDOW, wc.lpszClassName, title.c_str(), style, CW_USEDEFAULT, CW_USEDEFAULT, width, height, NULL, NULL, hInst, this);\n";
     } else {
-        out_ << "        // Windows native style window with native top-right Minimize, Maximize, Close buttons\n";
         out_ << "        DWORD style = WS_OVERLAPPEDWINDOW | WS_VISIBLE;\n";
         out_ << "        hwnd = CreateWindowExA(0, wc.lpszClassName, title.c_str(), style, CW_USEDEFAULT, CW_USEDEFAULT, width, height, NULL, NULL, hInst, this);\n";
     }
 
-    out_ << "        SetWindowLongPtrA(hwnd, GWLP_USERDATA, (LONG_PTR)this);\n\n";
+    out_ << "        SetWindowLongPtrA(hwnd, GWLP_USERDATA, (LONG_PTR)this);\n";
+    out_ << "        s_instance = this;\n\n";
+    out_ << "        hFont = CreateFontA(17, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, \"Segoe UI\");\n";
+    out_ << "        if (!hFont) hFont = (HFONT)GetStockObject(DEFAULT_GUI_FONT);\n\n";
 
     // Build real native menus
     if (!menu_build_stmts.empty()) {
         out_ << "        // Native Menu Bar Construction\n";
         for (const auto& stmt : menu_build_stmts) {
+            out_ << "        " << stmt << "\n";
+        }
+    }
+
+    // Build native layout widgets
+    if (!layout_build_stmts.empty()) {
+        out_ << "        // Native Layout Widgets Construction (Column/Row/Buttons/Inputs)\n";
+        for (const auto& stmt : layout_build_stmts) {
             out_ << "        " << stmt << "\n";
         }
     }
@@ -536,33 +847,45 @@ void NativeAppGenerator::visit(WindowDecl& node) {
     // Real Native Window Procedure
     out_ << "    static LRESULT CALLBACK s_WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {\n";
     out_ << "        Window_" << node.name << "* pThis = (Window_" << node.name << "*)GetWindowLongPtrA(hwnd, GWLP_USERDATA);\n";
+    out_ << "        if (!pThis) pThis = s_instance;\n";
+    out_ << "        Window_" << node.name << "& " << node.name << " = *pThis;\n";
     out_ << "        switch (msg) {\n";
     out_ << "            case WM_COMMAND: {\n";
     out_ << "                int cmdId = LOWORD(wParam);\n";
+    out_ << "                int notifyCode = HIWORD(wParam);\n";
+
+    // Route Menu Actions
     for (const auto& act : registered_menu_actions_) {
         out_ << "                if (cmdId == " << act.id << ") {\n";
-        out_ << "                    qkf_print(\"Menu clicked: " << act.label << "\");\n";
+        out_ << "                    qkf_print(\"Menu item clicked: " << act.label << "\");\n";
         if (act.onclick && act.onclick->block_value) {
-            for (const auto& s : act.onclick->block_value->statements) {
-                auto expr_s = dynamic_cast<ExprStmt*>(s.get());
-                if (expr_s && expr_s->expr) {
-                    auto call = dynamic_cast<FunctionCallExpr*>(expr_s->expr.get());
-                    auto id = call ? dynamic_cast<IdentifierExpr*>(call->callee.get()) : nullptr;
-                    if (id && id->name == "print") {
-                        out_ << "                    qkf_print(";
-                        for (size_t a = 0; a < call->args.size(); ++a) {
-                            auto lit_arg = dynamic_cast<LiteralExpr*>(call->args[a].get());
-                            if (lit_arg) out_ << "\"" << lit_arg->token.text << "\"";
-                            if (a + 1 < call->args.size()) out_ << " + ";
-                        }
-                        out_ << ");\n";
-                    }
-                }
-            }
+            std::string code = emit_block_stmts(*act.onclick->block_value, 5);
+            out_ << code;
         }
         out_ << "                    return 0;\n";
         out_ << "                }\n";
     }
+
+    // Route Control Actions (Buttons, Checkboxes, Inputs)
+    for (const auto& act : registered_control_actions_) {
+        if (act.control_type == "Button" || act.control_type == "Checkbox") {
+            out_ << "                if (cmdId == " << act.id << ") {\n";
+            out_ << "                    qkf_print(\"Action triggered on " << act.control_type << ": " << act.elem_id << " (" << act.elem_name << ")\");\n";
+            if (act.onclick && act.onclick->block_value) {
+                std::string code = emit_block_stmts(*act.onclick->block_value, 5);
+                out_ << code;
+            }
+            out_ << "                    return 0;\n";
+            out_ << "                }\n";
+        } else if (act.control_type == "Input" && act.onchange && act.onchange->block_value) {
+            out_ << "                if (cmdId == " << act.id << " && notifyCode == EN_CHANGE) {\n";
+            std::string code = emit_block_stmts(*act.onchange->block_value, 5);
+            out_ << code;
+            out_ << "                    return 0;\n";
+            out_ << "                }\n";
+        }
+    }
+
     out_ << "                break;\n";
     out_ << "            }\n";
 
@@ -570,12 +893,10 @@ void NativeAppGenerator::visit(WindowDecl& node) {
         out_ << "            case WM_PAINT: {\n";
         out_ << "                PAINTSTRUCT ps;\n";
         out_ << "                HDC hdc = BeginPaint(hwnd, &ps);\n";
-        out_ << "                // Draw macOS titlebar and traffic lights\n";
         out_ << "                RECT barRect = { 0, 0, pThis ? pThis->width : 800, 32 };\n";
         out_ << "                HBRUSH barBrush = CreateSolidBrush(RGB(30, 41, 59));\n";
         out_ << "                FillRect(hdc, &barRect, barBrush);\n";
         out_ << "                DeleteObject(barBrush);\n";
-        out_ << "                // Traffic Lights on top-left: Red(Close), Yellow(Min), Green(Max)\n";
         out_ << "                HBRUSH red = CreateSolidBrush(RGB(255, 95, 86));\n";
         out_ << "                HBRUSH yellow = CreateSolidBrush(RGB(255, 189, 46));\n";
         out_ << "                HBRUSH green = CreateSolidBrush(RGB(39, 201, 63));\n";
@@ -601,6 +922,7 @@ void NativeAppGenerator::visit(WindowDecl& node) {
     }
 
     out_ << "            case WM_DESTROY:\n";
+    out_ << "                if (pThis && pThis->hFont) DeleteObject(pThis->hFont);\n";
     out_ << "                PostQuitMessage(0);\n";
     out_ << "                return 0;\n";
     out_ << "        }\n";

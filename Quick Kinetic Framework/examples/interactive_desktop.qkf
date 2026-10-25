@@ -1,0 +1,171 @@
+// =============================================================================
+// Quick Kinetic Framework (QKF) - Interactive Native Desktop Application
+// Full Win32 Native App with Column & Row Layouts, Text, Input, Button, Checkbox
+// =============================================================================
+
+window AppWindow {
+    id: "app_window";
+    name: "MainAppWindow";
+    title: "Quick Kinetic - Native Layout & Widget Showcase";
+    width: 820;
+    height: 580;
+
+    // Standard Windows top-right controls
+    WindowControls {
+        id: "sys_controls";
+        name: "WindowControls";
+        style: "windows";
+    };
+
+    // Native Toolbar
+    Toolbar {
+        id: "main_toolbar";
+        name: "MainToolbar";
+
+        File {
+            id: "menu_file";
+            name: "FileMenu";
+            label: "File";
+
+            Save {
+                id: "menu_save";
+                name: "SaveMenu";
+                label: "Save";
+
+                QuickSave {
+                    id: "btn_quicksave";
+                    name: "QuickSaveAction";
+                    label: "Quick Save";
+                    onClick: {
+                        print("Menu: Quick Save executed!");
+                    };
+                };
+            };
+
+            Exit {
+                id: "btn_exit";
+                name: "ExitAction";
+                label: "Exit Application";
+                onClick: {
+                    print("Exiting application.");
+                    AppWindow.close();
+                };
+            };
+        };
+
+        Edit {
+            id: "menu_edit";
+            name: "EditMenu";
+            label: "Edit";
+
+            ClearForm {
+                id: "btn_clear_all";
+                name: "ClearFormAction";
+                label: "Clear All Fields";
+                onClick: {
+                    AppWindow.setText("user_input", "");
+                    AppWindow.setText("greeting_label", "Form cleared.");
+                    AppWindow.setChecked("notifications_chk", false);
+                };
+            };
+        };
+    };
+
+    // Layout Containers & Interactive Widgets
+    Column {
+        id: "main_column";
+        name: "MainContentColumn";
+        padding: 24;
+        spacing: 16;
+
+        Text {
+            id: "heading_title";
+            name: "AppHeading";
+            text: "Welcome to Quick Kinetic Desktop!";
+            width: 500;
+            height: 28;
+        };
+
+        Text {
+            id: "subtitle";
+            name: "AppSubtitle";
+            text: "Type your name below and click 'Say Hello' to interact with native Win32 controls:";
+            width: 700;
+            height: 22;
+        };
+
+        // Horizontal Row with Input and Action Button
+        Row {
+            id: "form_row";
+            name: "InputFormRow";
+            spacing: 12;
+
+            Input {
+                id: "user_input";
+                name: "UserNameField";
+                placeholder: "Enter your name...";
+                width: 280;
+                height: 30;
+            };
+
+            Button {
+                id: "greet_btn";
+                name: "GreetButton";
+                label: "Say Hello";
+                width: 140;
+                height: 30;
+                onClick: {
+                    let entered_name = AppWindow.getText("user_input");
+                    print("User entered: " + entered_name);
+                    AppWindow.setText("greeting_label", "Hello, " + entered_name + "! Welcome to native QKF desktop.");
+                };
+            };
+
+            Button {
+                id: "reset_btn";
+                name: "ResetButton";
+                label: "Clear";
+                width: 100;
+                height: 30;
+                onClick: {
+                    AppWindow.setText("user_input", "");
+                    AppWindow.setText("greeting_label", "Input cleared.");
+                };
+            };
+        };
+
+        // Status Label showing dynamic output
+        Text {
+            id: "greeting_label";
+            name: "GreetingDisplay";
+            text: "Status: Ready.";
+            width: 600;
+            height: 24;
+        };
+
+        // Checkbox toggle
+        Checkbox {
+            id: "notifications_chk";
+            name: "EnableNotifications";
+            label: "Enable desktop notification sounds";
+            checked: true;
+            width: 320;
+            height: 26;
+            onClick: {
+                let enabled = AppWindow.isChecked("notifications_chk");
+                if (enabled) {
+                    print("Notifications enabled!");
+                } else {
+                    print("Notifications disabled!");
+                };
+            };
+        };
+    };
+};
+
+f main() void {
+    print("Starting Quick Kinetic Interactive Native Desktop App...");
+    AppWindow.create();
+    AppWindow.center();
+    AppWindow.start();
+};

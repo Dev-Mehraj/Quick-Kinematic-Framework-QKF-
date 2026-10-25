@@ -222,6 +222,9 @@ std::unique_ptr<FunctionDecl> Parser::parse_function(std::vector<TemplateParam> 
     func->template_params = std::move(template_params);
 
     while (!check(TokenType::CloseBrace) && !is_at_end()) {
+        if (match(TokenType::Semicolon)) {
+            continue; // allow empty statement ;
+        }
         if (match(TokenType::KwIf)) {
             func->statements.push_back(parse_if());
             continue;
@@ -649,6 +652,9 @@ std::unique_ptr<PropertyNode> Parser::parse_property() {
 }
 
 std::unique_ptr<StmtNode> Parser::parse_statement() {
+    if (match(TokenType::Semicolon)) {
+        return nullptr; // allow empty statement ;
+    }
     if (match(TokenType::KwIf)) {
         return parse_if();
     }
@@ -707,7 +713,8 @@ std::unique_ptr<BlockStmt> Parser::parse_block() {
     block->location = previous().location;
 
     while (!check(TokenType::CloseBrace) && !is_at_end()) {
-        block->statements.push_back(parse_statement());
+        auto s = parse_statement();
+        if (s) block->statements.push_back(std::move(s));
     }
 
     consume(TokenType::CloseBrace, "Expected '}' to close block.");

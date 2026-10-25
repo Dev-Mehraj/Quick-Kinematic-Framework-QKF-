@@ -50,8 +50,20 @@ public:
     struct MenuAction {
         int id;
         std::string label;
-        PropertyNode* onclick;
+        PropertyNode* onclick = nullptr;
     };
+
+    struct ControlAction {
+        int id;
+        std::string control_type; // "Button", "Checkbox", "Input", "Text"
+        std::string elem_id;
+        std::string elem_name;
+        std::string label;
+        PropertyNode* onclick = nullptr;
+        PropertyNode* onchange = nullptr;
+    };
+
+    std::string emit_block_stmts(BlockStmt& block, int indent_lvl);
 
 private:
     void indent();
@@ -60,7 +72,9 @@ private:
     std::ostringstream out_;
     int indent_level_ = 0;
     int menu_id_counter_ = 1000;
+    int ctrl_id_counter_ = 2000;
     std::vector<MenuAction> registered_menu_actions_;
+    std::vector<ControlAction> registered_control_actions_;
 };
 
 } // namespace qkf

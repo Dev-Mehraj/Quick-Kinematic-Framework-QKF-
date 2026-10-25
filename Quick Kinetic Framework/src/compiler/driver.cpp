@@ -105,8 +105,8 @@ bool CompilationDriver::emit_native_app(const std::string& out_exe_path) {
         return false;
     }
 
-    // Compile with MinGW g++ using Windows GUI subsystem (-mwindows)
-    std::string cmd = "g++ -std=c++20 -O2 \"" + temp_cpp.string() + "\" -mwindows -o \"" + exe_p.string() + "\"";
+    // Compile with MinGW g++ using Windows GUI subsystem (-mwindows) and Common Controls
+    std::string cmd = "g++ -std=c++20 -O2 \"" + temp_cpp.string() + "\" -mwindows -lcomctl32 -o \"" + exe_p.string() + "\"";
     std::cout << "[NATIVE BUILD] Compiling native Windows binary: " << exe_p.string() << " ...\n";
     int ret = std::system(cmd.c_str());
 
