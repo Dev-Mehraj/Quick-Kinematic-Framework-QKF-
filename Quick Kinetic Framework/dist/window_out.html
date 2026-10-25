@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Quick Kinetic App</title>
+  <style>
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #f8fafc; }
+    .qkf-page { display: flex; flex-direction: column; min-height: 100vh; padding: 24px; box-sizing: border-box; }
+    .qkf-Column { display: flex; flex-direction: column; gap: 12px; }
+    .qkf-Row { display: flex; flex-direction: row; gap: 12px; }
+    .qkf-Button { background: #3b82f6; color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; border: none; font-weight: 600; }
+    .qkf-Button:hover { background: #2563eb; }
+    .qkf-Text { font-size: 16px; }
+  </style>
+</head>
+<body>
+  class Window_MainWindow {
+    constructor() {
+      this.name = "MainWindow";
+      this.title = "Quick Kinetic Window";
+      this.width = 800;
+      this.height = 600;
+    }
+    create() { console.log('[WINDOW] Created window: MainWindow'); }
+    start() { console.log('[WINDOW] Started window event loop: MainWindow'); }
+    close() { console.log('[WINDOW] Closed window: MainWindow'); }
+    function doThis() {
+      console.log("Executing custom window action doThis()");
+    }
+  };
+  const MainWindow = new Window_MainWindow();
+  function main() {
+    let window = "MainWindow";
+    let name = window;
+    name.create();
+    name.start();
+    name.doThis();
+  }
+</body>
+</html>
+

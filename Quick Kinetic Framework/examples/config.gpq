@@ -1,0 +1,13 @@
+# Quick Kinetic Framework Sample Project
+[project]
+    name = "DemoKineticApp";
+    version = "1.0.0";
+    entry = "app.qkf";
+
+[build]
+    target = "webview";
+    strict_semicolon = "true";
+
+[cloner]
+    template = "desktop-ui";
+    scaffold_version = "1.0.0";

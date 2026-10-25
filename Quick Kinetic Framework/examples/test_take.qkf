@@ -1,0 +1,13 @@
+import "math_ops";
+take "square" from "math_ops" use sq;
+take multiply from "math_ops" use mul;
+
+page MainApp {
+    state n = 5;
+
+    Column {
+        Text {
+            title: "Math demo";
+        };
+    };
+};

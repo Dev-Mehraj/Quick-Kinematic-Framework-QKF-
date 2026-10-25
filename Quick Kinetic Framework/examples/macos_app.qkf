@@ -1,0 +1,52 @@
+// =============================================================================
+// Quick Kinetic Framework (QKF) - macOS Style Native Desktop Application
+// Top-Left Traffic Lights (Red = Close, Yellow = Minimize, Green = Maximize)
+// =============================================================================
+
+window MacWindow {
+    id: "mac_window";
+    name: "MacStyleWindow";
+    title: "Quick Kinetic macOS Style Window";
+    width: 900;
+    height: 550;
+
+    // Window controls style: "macos" (top-left traffic lights)
+    WindowControls {
+        id: "traffic_lights";
+        name: "MacTrafficLights";
+        style: "macos";
+    };
+
+    Toolbar {
+        id: "mac_toolbar";
+        name: "MacAppToolbar";
+
+        File {
+            id: "menu_file";
+            name: "FileMenu";
+            label: "File";
+
+            Save {
+                id: "menu_save";
+                name: "SaveMenu";
+                label: "Save";
+
+                QuickSave {
+                    id: "btn_save";
+                    name: "QuickSaveAction";
+                    label: "Quick Save";
+                    onClick: {
+                        print("Quick Save on macOS style window executed!");
+                    };
+                };
+            };
+        };
+    };
+};
+
+f main() void {
+    print("Launching macOS style desktop application...");
+    MacWindow.create();
+    MacWindow.center();
+    MacWindow.start();
+};

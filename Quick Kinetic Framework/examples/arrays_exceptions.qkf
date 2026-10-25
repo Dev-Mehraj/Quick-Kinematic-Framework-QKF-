@@ -1,0 +1,25 @@
+f testArraysAndExceptions() void {
+    // 1. Array literals and indexing
+    let numbers = [10, 20, 30, 40, 50];
+    let first = numbers[0];
+    let second = numbers[1];
+
+    print("First item: " + first);
+
+    // 2. Try-catch-finally block
+    try {
+        if (first > 100) {
+            throw "Number exceeds maximum allowed limit";
+        }
+        print("Validation passed successfully");
+    } catch (err) {
+        errorlog("Encountered exception: " + err);
+    } finally {
+        print("Cleanup completed");
+    }
+
+    // 3. For-in loop over array
+    for (n in numbers) {
+        print("Number: " + n);
+    }
+}

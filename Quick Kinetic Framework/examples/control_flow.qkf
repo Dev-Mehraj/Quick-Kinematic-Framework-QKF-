@@ -1,0 +1,41 @@
+f evaluateScore(score: int) void {
+    if (score > 90) {
+        print("Excellent score: Grade A");
+    } else if (score > 75) {
+        print("Good score: Grade B");
+    } else {
+        warnlog("Score is below threshold");
+    }
+}
+
+f runLoopsDemo() void {
+    // 1. While loop
+    let count = 0;
+    while (count < 5) {
+        print("While loop count: " + count);
+        count = count + 1;
+    }
+
+    // 2. Do-while loop
+    let attempts = 0;
+    do {
+        print("Attempting operation...");
+        attempts = attempts + 1;
+    } while (attempts < 3);
+
+    // 3. For loop with break and continue
+    for (let i = 0; i < 10; i = i + 1) {
+        if (i == 3) {
+            continue;
+        }
+        if (i == 7) {
+            break;
+        }
+        print("For loop index: " + i);
+    }
+
+    // 4. For-in loop
+    for (item in items) {
+        print("Processing item: " + item);
+    }
+}

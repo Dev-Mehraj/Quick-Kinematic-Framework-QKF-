@@ -1,0 +1,110 @@
+// =============================================================================
+// Quick Kinetic Framework (QKF) - Native Desktop Application Example
+// Real Native Win32 Desktop Window with Windows top-right controls & Native Menus
+// =============================================================================
+
+window AppWindow {
+    id: "app_window";
+    name: "MainAppWindow";
+    title: "Quick Kinetic Native App";
+    width: 960;
+    height: 640;
+
+    // Window controls style: "windows" (native top-right minimize/maximize/close)
+    WindowControls {
+        id: "sys_controls";
+        name: "WindowSystemControls";
+        style: "windows";
+    };
+
+    // Native Toolbar menu hierarchy with IDs and names preserved for styling/actions
+    Toolbar {
+        id: "main_toolbar";
+        name: "ApplicationToolbar";
+
+        File {
+            id: "menu_file";
+            name: "FileMenu";
+            label: "File";
+
+            Save {
+                id: "menu_save";
+                name: "SaveSubMenu";
+                label: "Save";
+
+                QuickSave {
+                    id: "btn_quicksave";
+                    name: "QuickSaveButton";
+                    label: "Quick Save";
+                    onClick: {
+                        print("Quick Save action executed natively!");
+                    };
+                };
+
+                ExportAll {
+                    id: "btn_export";
+                    name: "ExportAllButton";
+                    label: "Export All...";
+                    onClick: {
+                        print("Export All triggered!");
+                    };
+                };
+            };
+
+            Exit {
+                id: "btn_exit";
+                name: "ExitButton";
+                label: "Exit Application";
+                onClick: {
+                    print("Exiting application.");
+                };
+            };
+        };
+
+        Edit {
+            id: "menu_edit";
+            name: "EditMenu";
+            label: "Edit";
+
+            Undo {
+                id: "btn_undo";
+                name: "UndoButton";
+                label: "Undo";
+                onClick: {
+                    print("Undo action executed!");
+                };
+            };
+
+            Redo {
+                id: "btn_redo";
+                name: "RedoButton";
+                label: "Redo";
+                onClick: {
+                    print("Redo action executed!");
+                };
+            };
+        };
+
+        Settings {
+            id: "menu_settings";
+            name: "SettingsMenu";
+            label: "Settings";
+
+            Preferences {
+                id: "btn_prefs";
+                name: "PreferencesButton";
+                label: "Preferences...";
+                onClick: {
+                    print("Preferences opened.");
+                };
+            };
+        };
+    };
+};
+
+f main() void {
+    print("Launching Quick Kinetic Native Application...");
+    AppWindow.create();
+    AppWindow.center();
+    AppWindow.start();
+};

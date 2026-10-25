@@ -1,0 +1,7 @@
+import ui.core;
+
+page HeaderComponent {
+    Text {
+        title: "Kinetic Header Navigation";
+    };
+};

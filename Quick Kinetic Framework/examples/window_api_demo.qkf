@@ -1,0 +1,37 @@
+// Demonstration of complete Window API in QKF
+
+window MainWindow {
+    title: "Quick Kinetic Dashboard";
+    width: 1024;
+    height: 768;
+
+    f onSetup() void {
+        print("Window custom onSetup() executed");
+    }
+};
+
+f runApplication() void {
+    let win = MainWindow;
+
+    // 1. Lifecycle
+    win.create();
+
+    // 2. Title & Properties
+    win.setTitle("Kinetic App Pro v1.0");
+    win.setSize(1280, 720);
+    win.setPosition(50, 50);
+    win.center();
+
+    // 3. Flags & Window State
+    win.setAlwaysOnTop(true);
+    win.setResizable(true);
+    win.setOpacity(0.95);
+    win.setBackgroundColor("#0f172a");
+
+    // 4. Window State controls
+    win.maximize();
+    win.restore();
+
+    // 5. Start event loop
+    win.start();
+}

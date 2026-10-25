@@ -1,0 +1,85 @@
+window MacAppWindow {
+    title: "macOS Style App";
+    width: 900;
+    height: 600;
+
+    TitleBar {
+        id: "mac-titlebar";
+        name: "titlebar_macos";
+
+        // 1. macOS Cross (Close), Minus (Minimize), and Small window sign (Maximize)
+        WindowControls {
+            id: "mac-traffic-lights";
+            name: "macos_controls";
+            style: "macos";
+            position: "left";
+        };
+
+        Text {
+            id: "mac-title-text";
+            name: "title_text";
+            content: "macOS Window - Quick Kinetic Framework";
+        };
+    };
+};
+
+window WindowsAppWindow {
+    title: "Windows Style App";
+    width: 900;
+    height: 600;
+
+    TitleBar {
+        id: "win-titlebar";
+        name: "titlebar_windows";
+
+        Text {
+            id: "win-title-text";
+            name: "title_text";
+            content: "Windows Window - Quick Kinetic Framework";
+        };
+
+        // 2. Windows Minus, Small window sign, and Cross Close
+        WindowControls {
+            id: "windows-title-buttons";
+            name: "windows_controls";
+            style: "windows";
+            position: "right";
+        };
+    };
+};
+
+window LinuxAppWindow {
+    title: "Linux Style App";
+    width: 900;
+    height: 600;
+
+    TitleBar {
+        id: "linux-titlebar";
+        name: "titlebar_linux";
+
+        Text {
+            id: "linux-title-text";
+            name: "title_text";
+            content: "Linux Window - Quick Kinetic Framework";
+        };
+
+        // 3. Linux GNOME / KDE style controls
+        WindowControls {
+            id: "linux-title-buttons";
+            name: "linux_controls";
+            style: "linux";
+            position: "right";
+        };
+    };
+};
+
+f main() void {
+    let macWin = MacAppWindow;
+    macWin.create();
+
+    let winWin = WindowsAppWindow;
+    winWin.create();
+
+    let linWin = LinuxAppWindow;
+    linWin.create();
+}

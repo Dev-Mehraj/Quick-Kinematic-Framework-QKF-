@@ -1,0 +1,39 @@
+// QKF Core Language Features: Namespace, Enum, Class, Template, Scope Resolution (::), and Built-in I/O
+
+namespace MathOps {
+    f add(a: int, b: int) return = int {
+        a + b
+    }
+}
+
+enum LogLevel {
+    Info,
+    Warning,
+    Error
+};
+
+class UserSession {
+public:
+    int userId;
+    string username;
+
+    f displayInfo() void {
+        print("Displaying user info");
+        warnlog("Session expires soon");
+    }
+};
+
+template <typename T>
+class StorageBox {
+public:
+    T item;
+};
+
+f mainApp() void {
+    print("Welcome to Quick Kinetic Framework");
+    warnlog("Warning message logged");
+    errorlog("Error message logged");
+
+    let sum = MathOps::add(10, 25);
+    let currentLevel = LogLevel::Info;
+}

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Quick Kinetic App</title>
+  <style>
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #f8fafc; }
+    .qkf-page { display: flex; flex-direction: column; min-height: 100vh; padding: 24px; box-sizing: border-box; }
+    .qkf-Column { display: flex; flex-direction: column; gap: 12px; }
+    .qkf-Row { display: flex; flex-direction: row; gap: 12px; }
+    .qkf-Button { background: #3b82f6; color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; border: none; font-weight: 600; }
+    .qkf-Button:hover { background: #2563eb; }
+    .qkf-Text { font-size: 16px; }
+  </style>
+</head>
+<body>
+  function testArraysAndExceptions() {
+    let numbers = [10, 20, 30, 40, 50];
+    let first = numbers[0];
+    let second = numbers[1];
+    console.log(("First item: " + first));
+    try     {
+      if ((first > 100))       {
+        throw "Number exceeds maximum allowed limit";
+      }
+      console.log("Validation passed successfully");
+    }
+    catch (err)     {
+      console.error(("Encountered exception: " + err));
+    }
+    finally     {
+      console.log("Cleanup completed");
+    }
+    for (let n of numbers)     {
+      console.log(("Number: " + n));
+    }
+  }
+</body>
+</html>
+

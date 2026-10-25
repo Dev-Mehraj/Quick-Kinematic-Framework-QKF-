@@ -1,0 +1,27 @@
+import ui.core;
+
+f add(a: int, b: int) return = int {
+    a + b
+}
+
+f calculatePrice(base: int, tax: int) return = int {
+    let sum = base + tax;
+    sum * 2
+}
+
+f logStatus(code: int) void {
+    let msg = code;
+}
+
+page MainWindow {
+    state counter = 0;
+
+    Column {
+        spacing: 12;
+        padding: 24;
+
+        Text {
+            title: "Function syntax test passed";
+        };
+    };
+};

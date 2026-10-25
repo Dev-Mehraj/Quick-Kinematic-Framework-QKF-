@@ -1,0 +1,23 @@
+import ui.core;
+import components.header;
+
+page MainWindow {
+    state counter = 0;
+
+    Column {
+        spacing: 12;
+        padding: 24;
+
+        Text {
+            title: "Quick Kinetic Framework (QKF)";
+        };
+
+        Text {
+            content: "Declarative UI with strict semicolon syntax.";
+        };
+
+        Button {
+            label: "Click Me";
+        };
+    };
+};

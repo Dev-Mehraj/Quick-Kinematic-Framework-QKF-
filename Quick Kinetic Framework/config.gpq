@@ -1,0 +1,14 @@
+# Quick Kinetic Framework - Root Configuration
+[project]
+    name = "QuickKineticApp";
+    version = "1.0.0";
+    entry = "examples/desktop_app.qkf";
+
+[build]
+    target = "native";
+    output = "bin/QuickKineticApp.exe";
+    strict_semicolon = "true";
+
+[cloner]
+    template = "desktop-app";
+    scaffold_version = "1.0.0";

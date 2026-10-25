@@ -1,0 +1,85 @@
+window AppWindow {
+    title: "Quick Kinetic App with Nested Toolbar";
+    width: 1200;
+    height: 800;
+
+    Toolbar {
+        id: "main-app-toolbar";
+        name: "top_toolbar";
+
+        File {
+            id: "menu-file";
+            name: "file_menu";
+            label: "File";
+
+            Save {
+                id: "item-save";
+                name: "save_item";
+                label: "Save";
+
+                QuickSave {
+                    id: "btn-quick-save";
+                    name: "quick_save_btn";
+                    label: "Quick Save";
+                    onClick: {
+                        print("Quick Save action executed successfully");
+                    };
+                };
+
+                SaveAs {
+                    id: "btn-save-as";
+                    name: "save_as_btn";
+                    label: "Save As...";
+                    onClick: {
+                        print("Save As action executed");
+                    };
+                };
+            };
+        };
+
+        Edit {
+            id: "menu-edit";
+            name: "edit_menu";
+            label: "Edit";
+
+            Undo {
+                id: "btn-undo";
+                name: "undo_btn";
+                label: "Undo";
+                onClick: {
+                    print("Undo action executed");
+                };
+            };
+
+            Redo {
+                id: "btn-redo";
+                name: "redo_btn";
+                label: "Redo";
+                onClick: {
+                    print("Redo action executed");
+                };
+            };
+        };
+
+        Settings {
+            id: "menu-settings";
+            name: "settings_menu";
+            label: "Settings";
+
+            Preferences {
+                id: "btn-preferences";
+                name: "preferences_btn";
+                label: "Preferences";
+                onClick: {
+                    print("Opening Preferences Dialog");
+                };
+            };
+        };
+    };
+};
+
+f main() void {
+    let win = AppWindow;
+    win.create();
+    win.start();
+}

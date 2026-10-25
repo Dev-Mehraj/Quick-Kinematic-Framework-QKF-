@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Quick Kinetic App</title>
+  <style>
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #f8fafc; }
+    .qkf-page { display: flex; flex-direction: column; min-height: 100vh; padding: 24px; box-sizing: border-box; }
+    .qkf-Column { display: flex; flex-direction: column; gap: 12px; }
+    .qkf-Row { display: flex; flex-direction: row; gap: 12px; }
+    .qkf-Button { background: #3b82f6; color: white; padding: 10px 20px; border-radius: 8px; cursor: pointer; border: none; font-weight: 600; }
+    .qkf-Button:hover { background: #2563eb; }
+    .qkf-Text { font-size: 16px; }
+    .qkf-Toolbar { display: flex; flex-direction: row; background: #1e293b; border-bottom: 1px solid #334155; user-select: none; }
+    .qkf-has-children { position: relative; padding: 8px 16px; cursor: pointer; }
+    .qkf-has-children:hover { background: #334155; }
+    .qkf-has-children > div { display: none; position: absolute; top: 100%; left: 0; background: #1e293b; border: 1px solid #334155; box-shadow: 0 4px 12px rgba(0,0,0,0.5); min-width: 160px; z-index: 1000; }
+    .qkf-has-children:hover > div { display: block; }
+    .qkf-has-children > div > div { position: relative; padding: 8px 16px; }
+    .qkf-has-children > div > div:hover { background: #334155; }
+    .qkf-has-children > div > div > div { top: 0; left: 100%; }
+    .qkf-label { font-size: 14px; font-weight: 500; }
+    [onclick] { cursor: pointer; }
+    [onclick]:hover { background: #2563eb !important; color: white; }
+  </style>
+</head>
+<body>
+  class Window_AppWindow {
+    constructor() {
+      this.name = "AppWindow";
+      this.title = "Quick Kinetic App with Nested Toolbar";
+      this.width = 1200;
+      this.height = 800;
+    }
+    create() { console.log('[WINDOW ' + this.name + '] Initialized context surface'); }
+    start() { console.log('[WINDOW ' + this.name + '] Started event loop'); }
+    show() { console.log('[WINDOW ' + this.name + '] Shown'); }
+    hide() { console.log('[WINDOW ' + this.name + '] Hidden'); }
+    close() { console.log('[WINDOW ' + this.name + '] Closed'); }
+    destroy() { console.log('[WINDOW ' + this.name + '] Destroyed resources'); }
+    setTitle(newTitle) { this.title = newTitle; console.log('[WINDOW ' + this.name + '] Title: ' + newTitle); }
+    getTitle() { return this.title; }
+    setSize(w, h) { this.width = w; this.height = h; console.log('[WINDOW ' + this.name + '] Size: ' + w + 'x' + h); }
+    getSize() { return [this.width, this.height]; }
+    setPosition(x, y) { this.x = x; this.y = y; console.log('[WINDOW ' + this.name + '] Position: (' + x + ', ' + y + ')'); }
+    getPosition() { return [this.x || 0, this.y || 0]; }
+    center() { console.log('[WINDOW ' + this.name + '] Centered on screen'); }
+    maximize() { console.log('[WINDOW ' + this.name + '] Maximized'); }
+    minimize() { console.log('[WINDOW ' + this.name + '] Minimized to taskbar'); }
+    restore() { console.log('[WINDOW ' + this.name + '] Restored'); }
+    setFullscreen(flag) { console.log('[WINDOW ' + this.name + '] Fullscreen: ' + flag); }
+    setResizable(flag) { this.resizable = flag; console.log('[WINDOW ' + this.name + '] Resizable: ' + flag); }
+    setAlwaysOnTop(flag) { this.alwaysOnTop = flag; console.log('[WINDOW ' + this.name + '] AlwaysOnTop: ' + flag); }
+    setOpacity(val) { this.opacity = val; console.log('[WINDOW ' + this.name + '] Opacity: ' + val); }
+    setBackgroundColor(col) { this.backgroundColor = col; console.log('[WINDOW ' + this.name + '] Background: ' + col); }
+    onClose(cb) { this._onClose = cb; }
+    onResize(cb) { this._onResize = cb; }
+    onFocus(cb) { this._onFocus = cb; }
+  };
+  const AppWindow = new Window_AppWindow();
+  <!-- Window Elements for AppWindow -->
+  <div id="window-AppWindow" class="qkf-window-container">
+    <nav class="qkf-Toolbar qkf-has-children" id="main-app-toolbar" data-name="top_toolbar">
+      <div class="qkf-File qkf-has-children" id="menu-file" data-name="file_menu">
+        <span class="qkf-label">File</span>
+        <div class="qkf-Save qkf-has-children" id="item-save" data-name="save_item">
+          <span class="qkf-label">Save</span>
+          <div class="qkf-QuickSave" id="btn-quick-save" data-name="quick_save_btn" onclick="(function(event){ event.stopPropagation(); console.log(\"Quick Save action executed successfully\"); })(event)">
+            <span class="qkf-label">Quick Save</span>
+          </div>
+          <div class="qkf-SaveAs" id="btn-save-as" data-name="save_as_btn" onclick="(function(event){ event.stopPropagation(); console.log(\"Save As action executed\"); })(event)">
+            <span class="qkf-label">Save As...</span>
+          </div>
+        </div>
+      </div>
+      <div class="qkf-Edit qkf-has-children" id="menu-edit" data-name="edit_menu">
+        <span class="qkf-label">Edit</span>
+        <div class="qkf-Undo" id="btn-undo" data-name="undo_btn" onclick="(function(event){ event.stopPropagation(); console.log(\"Undo action executed\"); })(event)">
+          <span class="qkf-label">Undo</span>
+        </div>
+        <div class="qkf-Redo" id="btn-redo" data-name="redo_btn" onclick="(function(event){ event.stopPropagation(); console.log(\"Redo action executed\"); })(event)">
+          <span class="qkf-label">Redo</span>
+        </div>
+      </div>
+      <div class="qkf-Settings qkf-has-children" id="menu-settings" data-name="settings_menu">
+        <span class="qkf-label">Settings</span>
+        <div class="qkf-Preferences" id="btn-preferences" data-name="preferences_btn" onclick="(function(event){ event.stopPropagation(); console.log(\"Opening Preferences Dialog\"); })(event)">
+          <span class="qkf-label">Preferences</span>
+        </div>
+      </div>
+    </nav>
+  </div>
+  function main() {
+    let win = AppWindow;
+    win.create();
+    win.start();
+  }
+</body>
+</html>
+

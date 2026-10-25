@@ -1,0 +1,7 @@
+f square(x: int) return = int {
+    x * x
+}
+
+f multiply(a: int, b: int) return = int {
+    a * b
+}
